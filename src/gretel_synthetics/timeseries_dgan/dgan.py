@@ -56,7 +56,7 @@ from typing import Callable, Dict, List, Optional, Tuple
 import numpy as np
 import pandas as pd
 import torch
-
+import os
 from gretel_synthetics.timeseries_dgan.config import DfStyle, DGANConfig, OutputType
 from gretel_synthetics.timeseries_dgan.structures import ProgressInfo
 from gretel_synthetics.timeseries_dgan.torch_modules import Discriminator, Generator
