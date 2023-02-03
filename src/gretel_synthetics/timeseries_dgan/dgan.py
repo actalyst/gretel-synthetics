@@ -803,13 +803,7 @@ class DGAN:
                     scaler.step(opt_discriminator)
                     scaler.update()
 
-                if (epoch%50)==0:
-                    state_disc = {'epoch': epoch,
-                                  'state_dict': feature_discriminator.state_dict(),
-                                  'opt_discriminator': opt_discriminator.state_dict(),}
-                    savepath_disc='checkpoint_disc.t7'
-                    torch.save(state_disc,savepath_disc)
-
+            
                     if opt_attribute_discriminator is not None:
                         opt_attribute_discriminator.zero_grad(set_to_none=False)
                         # Exclude features (last element of batches) for
@@ -841,14 +835,7 @@ class DGAN:
                         scaler.step(opt_attribute_discriminator)
                         scaler.update()
 
-                        if (epoch%50)==0:
-                            state_att_disc = {'epoch': epoch,
-                                          'state_dict': attribute_discriminator.state_dict(),
-                                          'opt_attribute_discriminator': opt_attribute_discriminator.state_dict(),}
-                            savepath_disc='checkpoint_att_disc.t7'
-                            torch.save(state_att_disc,savepath_disc)
-
-                    
+                               
                 for _ in range(self.config.generator_rounds):
                     opt_generator.zero_grad(set_to_none=False)
                     with torch.cuda.amp.autocast(
@@ -875,12 +862,25 @@ class DGAN:
                     scaler.step(opt_generator)
                     scaler.update()
 
-                    if (epoch%50)==0:
-                            state_gen = {'epoch': epoch,
-                                          'state_dict': generator.state_dict(),
-                                          'opt_generator': opt_generator.state_dict(),}
-                            savepath_disc='checkpoint_gen.t7'
-                            torch.save(state_gen,savepath_disc)
+            if (epoch%50)==0:
+                state_disc = {'epoch': epoch,
+                                'state_dict': self.feature_discriminator.state_dict(),
+                                'opt_discriminator': opt_discriminator.state_dict(),}
+                savepath_disc='checkpoint_disc.t7'
+                torch.save(state_disc,savepath_disc)
+
+            if (epoch%50)==0:
+                state_att_disc = {'epoch': epoch,
+                                'state_dict': self.attribute_discriminator.state_dict(),
+                                'opt_attribute_discriminator': opt_attribute_discriminator.state_dict(),}
+                savepath_disc='checkpoint_att_disc.t7'
+                torch.save(state_att_disc,savepath_disc)
+            if (epoch%50)==0:
+                state_gen = {'epoch': epoch,
+                                'state_dict': self.generator.state_dict(),
+                                'opt_generator': opt_generator.state_dict(),}
+                savepath_disc='checkpoint_gen.t7'
+                torch.save(state_gen,savepath_disc)
 
                 if progress_callback is not None:
                     progress_callback(
