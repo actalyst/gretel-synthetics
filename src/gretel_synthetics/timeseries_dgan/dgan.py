@@ -176,6 +176,7 @@ class DGAN:
         attributes: Optional[np.ndarray] = None,
         attribute_types: Optional[List[OutputType]] = None,
         progress_callback: Optional[Callable[[ProgressInfo]]] = None,
+        run,
     ) -> None:
         """Train DGAN model on data in numpy arrays.
 
@@ -212,6 +213,7 @@ class DGAN:
                 attributes are continuous. Ignored if the model was already
                 built, either by passing *output params at initialization or
                 because train_* was called previously.
+            run: run information indicator to save checkpoints while training
         """
         if attributes is not None:
             if attributes.shape[0] != features.shape[0]:
@@ -330,7 +332,7 @@ class DGAN:
             torch.Tensor(internal_features),
         )
 
-        self._train(dataset, progress_callback=progress_callback)
+        self._train(dataset, progress_callback=progress_callback,run)
 
     def train_dataframe(
         self,
@@ -342,6 +344,7 @@ class DGAN:
         discrete_columns: Optional[List[str]] = None,
         df_style: DfStyle = DfStyle.WIDE,
         progress_callback: Optional[Callable[[ProgressInfo]]] = None,
+        run,
     ) -> None:
         """Train DGAN model on data in pandas DataFrame.
 
@@ -372,6 +375,7 @@ class DGAN:
                 in [0,1,2,3...]
             df_style: str enum of "wide" or "long" indicating format of the
                 DataFrame
+            run : to indicate run information for saving checkpoints
         """
 
         if self.data_frame_converter is None:
@@ -458,6 +462,7 @@ class DGAN:
             attribute_types=self.data_frame_converter.attribute_types,
             feature_types=self.data_frame_converter.feature_types,
             progress_callback=progress_callback,
+            run,
         )
 
     def generate_numpy(
@@ -597,100 +602,110 @@ class DGAN:
         else:
             self.device = "cpu"
 
-        self.generator = Generator(
-            attribute_outputs,
-            self.additional_attribute_outputs,
-            feature_outputs,
-            self.config.max_sequence_len,
-            self.config.sample_len,
-            self.config.attribute_noise_dim,
-            self.config.feature_noise_dim,
-            self.config.attribute_num_units,
-            self.config.attribute_num_layers,
-            self.config.feature_num_units,
-            self.config.feature_num_layers,
-        )
+        checkpoint_path = os.path.join('/checkpoints')
 
-        self.generator.to(self.device, non_blocking=True)
+        if not len(os.path.isdir(checkpoint_path)) == 0:
 
-        if self.attribute_outputs is None:
-            self.attribute_outputs = []
-        attribute_dim = sum(output.dim for output in self.attribute_outputs)
+            self.generator, epoch = load_model_from_checkpoints(checkpoint_path, '/checkpoint_gen_'+str(run)+'.t7')
+            self.feature_discriminator, epoch = load_model_from_checkpoints(checkpoint_path, '/checkpoint_feat_disc_'+str(run)+'.t7')
+            self.attribute_discriminator, epoch = load_model_from_checkpoints(checkpoint_path, '/checkpoint_att_disc_'+str(run)+'.t7')
 
-        if not self.additional_attribute_outputs:
-            self.additional_attribute_outputs = []
-        additional_attribute_dim = sum(
-            output.dim for output in self.additional_attribute_outputs
-        )
-        feature_dim = sum(output.dim for output in feature_outputs)
-        self.feature_discriminator = Discriminator(
-            attribute_dim
-            + additional_attribute_dim
-            + self.config.max_sequence_len * feature_dim,
-            num_layers=5,
-            num_units=200,
-        )
-        self.feature_discriminator.to(self.device, non_blocking=True)
+        else :
+            self.generator = Generator(
+                attribute_outputs,
+                self.additional_attribute_outputs,
+                feature_outputs,
+                self.config.max_sequence_len,
+                self.config.sample_len,
+                self.config.attribute_noise_dim,
+                self.config.feature_noise_dim,
+                self.config.attribute_num_units,
+                self.config.attribute_num_layers,
+                self.config.feature_num_units,
+                self.config.feature_num_layers,
+            )
 
-        self.attribute_discriminator = None
-        if not self.additional_attribute_outputs and not self.attribute_outputs:
-            self.config.use_attribute_discriminator = False
+            self.generator.to(self.device, non_blocking=True)
 
-        if self.config.use_attribute_discriminator:
-            self.attribute_discriminator = Discriminator(
-                attribute_dim + additional_attribute_dim,
+            if self.attribute_outputs is None:
+                self.attribute_outputs = []
+            attribute_dim = sum(output.dim for output in self.attribute_outputs)
+
+            if not self.additional_attribute_outputs:
+                self.additional_attribute_outputs = []
+            additional_attribute_dim = sum(
+                output.dim for output in self.additional_attribute_outputs
+            )
+            feature_dim = sum(output.dim for output in feature_outputs)
+            self.feature_discriminator = Discriminator(
+                attribute_dim
+                + additional_attribute_dim
+                + self.config.max_sequence_len * feature_dim,
                 num_layers=5,
                 num_units=200,
             )
-            self.attribute_discriminator.to(self.device, non_blocking=True)
+            self.feature_discriminator.to(self.device, non_blocking=True)
 
-        self.attribute_noise_func = lambda batch_size: torch.randn(
-            batch_size, self.config.attribute_noise_dim, device=self.device
-        )
+            self.attribute_discriminator = None
+            if not self.additional_attribute_outputs and not self.attribute_outputs:
+                self.config.use_attribute_discriminator = False
 
-        self.feature_noise_func = lambda batch_size: torch.randn(
-            batch_size,
-            self.config.max_sequence_len // self.config.sample_len,
-            self.config.feature_noise_dim,
-            device=self.device,
-        )
+            if self.config.use_attribute_discriminator:
+                self.attribute_discriminator = Discriminator(
+                    attribute_dim + additional_attribute_dim,
+                    num_layers=5,
+                    num_units=200,
+                )
+                self.attribute_discriminator.to(self.device, non_blocking=True)
 
-        if self.config.forget_bias:
+            self.attribute_noise_func = lambda batch_size: torch.randn(
+                batch_size, self.config.attribute_noise_dim, device=self.device
+            )
 
-            def init_weights(m):
-                if "LSTM" in str(m.__class__):
-                    for name, param in m.named_parameters(recurse=False):
-                        if "bias_hh" in name:
-                            # The LSTM bias param is a concatenation of 4 bias
-                            # terms: (b_ii|b_if|b_ig|b_io). We only want to
-                            # change the forget gate bias, i.e., b_if. But we
-                            # can't change a slice of the tensor, so need to
-                            # recreate the initialization for the other parts
-                            # and concatenate with the new forget gate bias
-                            # initialization.
-                            with torch.no_grad():
-                                hidden_size = m.hidden_size
-                                a = -np.sqrt(1.0 / hidden_size)
-                                b = np.sqrt(1.0 / hidden_size)
-                                bias_ii = torch.Tensor(hidden_size)
-                                bias_ig_io = torch.Tensor(hidden_size * 2)
-                                bias_if = torch.Tensor(hidden_size)
-                                torch.nn.init.uniform_(bias_ii, a, b)
-                                torch.nn.init.uniform_(bias_ig_io, a, b)
-                                torch.nn.init.ones_(bias_if)
-                                new_param = torch.cat(
-                                    [bias_ii, bias_if, bias_ig_io], dim=0
-                                )
-                                param.copy_(new_param)
+            self.feature_noise_func = lambda batch_size: torch.randn(
+                batch_size,
+                self.config.max_sequence_len // self.config.sample_len,
+                self.config.feature_noise_dim,
+                device=self.device,
+            )
 
-            self.generator.apply(init_weights)
+            if self.config.forget_bias:
 
-        self.is_built = True
+                def init_weights(m):
+                    if "LSTM" in str(m.__class__):
+                        for name, param in m.named_parameters(recurse=False):
+                            if "bias_hh" in name:
+                                # The LSTM bias param is a concatenation of 4 bias
+                                # terms: (b_ii|b_if|b_ig|b_io). We only want to
+                                # change the forget gate bias, i.e., b_if. But we
+                                # can't change a slice of the tensor, so need to
+                                # recreate the initialization for the other parts
+                                # and concatenate with the new forget gate bias
+                                # initialization.
+                                with torch.no_grad():
+                                    hidden_size = m.hidden_size
+                                    a = -np.sqrt(1.0 / hidden_size)
+                                    b = np.sqrt(1.0 / hidden_size)
+                                    bias_ii = torch.Tensor(hidden_size)
+                                    bias_ig_io = torch.Tensor(hidden_size * 2)
+                                    bias_if = torch.Tensor(hidden_size)
+                                    torch.nn.init.uniform_(bias_ii, a, b)
+                                    torch.nn.init.uniform_(bias_ig_io, a, b)
+                                    torch.nn.init.ones_(bias_if)
+                                    new_param = torch.cat(
+                                        [bias_ii, bias_if, bias_ig_io], dim=0
+                                    )
+                                    param.copy_(new_param)
+
+                self.generator.apply(init_weights)
+
+            self.is_built = True
 
     def _train(
         self,
         dataset: Dataset,
         progress_callback: Optional[Callable[[ProgressInfo]]] = None,
+        run,
     ):
         """Internal method for training DGAN model.
 
@@ -754,7 +769,13 @@ class DGAN:
         self._set_mode(True)
         scaler = torch.cuda.amp.GradScaler(enabled=self.config.mixed_precision_training)
 
-        for epoch in range(self.config.epochs):
+        checkpoint_path = os.path.join('/checkpoints')
+        if not len(os.path.isdir(checkpoint_path)) == 0:
+            self.generator, epoch_ = load_model_from_checkpoints(checkpoint_path, '/checkpoint_gen_'+str(run)+'.t7')
+        else:
+            epoch_=0
+
+        for epoch in range(epoch_,self.config.epochs):
             logger.info(f"epoch: {epoch}")
 
             for batch_idx, real_batch in enumerate(loader):
@@ -866,21 +887,23 @@ class DGAN:
                 state_disc = {'epoch': epoch,
                                 'state_dict': self.feature_discriminator.state_dict(),
                                 'opt_discriminator': opt_discriminator.state_dict(),}
-                savepath_disc='checkpoint_disc.t7'
+                savepath_disc='/checkpoints/checkpoint_disc.t7'
                 torch.save(state_disc,savepath_disc)
 
             if (epoch%50)==0:
                 state_att_disc = {'epoch': epoch,
                                 'state_dict': self.attribute_discriminator.state_dict(),
                                 'opt_attribute_discriminator': opt_attribute_discriminator.state_dict(),}
-                savepath_disc='checkpoint_att_disc.t7'
+                savepath_disc='/checkpoints/checkpoint_att_disc.t7'
                 torch.save(state_att_disc,savepath_disc)
             if (epoch%50)==0:
                 state_gen = {'epoch': epoch,
                                 'state_dict': self.generator.state_dict(),
                                 'opt_generator': opt_generator.state_dict(),}
-                savepath_disc='checkpoint_gen.t7'
+                savepath_disc='/checkpoints/checkpoint_gen.t7'
                 torch.save(state_gen,savepath_disc)
+
+            print(epoch)
 
                 if progress_callback is not None:
                     progress_callback(
