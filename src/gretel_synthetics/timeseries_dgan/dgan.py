@@ -597,13 +597,13 @@ class DGAN:
         else:
             self.device = "cpu"
 
-        checkpoint_path = os.path.join('/checkpoints')
+        fname = '/checkpoints/' + 'checkpoint_gen_'+str(run)+'.t7'
 
-        if not len(os.path.isdir(checkpoint_path)) == 0:
+        if os.path.isfile(fname) :
 
-            self.generator, epoch = load_model_from_checkpoints(checkpoint_path, '/checkpoint_gen_'+str(run)+'.t7')
-            self.feature_discriminator, epoch = load_model_from_checkpoints(checkpoint_path, '/checkpoint_feat_disc_'+str(run)+'.t7')
-            self.attribute_discriminator, epoch = load_model_from_checkpoints(checkpoint_path, '/checkpoint_att_disc_'+str(run)+'.t7')
+            self.generator, epoch = load_model_from_checkpoints(checkpoint_path, 'checkpoint_gen_'+str(run)+'.t7')
+            self.feature_discriminator, epoch = load_model_from_checkpoints(checkpoint_path, 'checkpoint_feat_disc_'+str(run)+'.t7')
+            self.attribute_discriminator, epoch = load_model_from_checkpoints(checkpoint_path, 'checkpoint_att_disc_'+str(run)+'.t7')
 
         else :
             self.generator = Generator(
@@ -763,9 +763,9 @@ class DGAN:
         self._set_mode(True)
         scaler = torch.cuda.amp.GradScaler(enabled=self.config.mixed_precision_training)
 
-        checkpoint_path = os.path.join('/checkpoints')
-        if not len(os.path.isdir(checkpoint_path)) == 0:
-            self.generator, epoch_ = load_model_from_checkpoints(checkpoint_path, '/checkpoint_gen_'+str(run)+'.t7')
+        fname = '/checkpoints/'+'checkpoint_gen_'+str(run)+'.t7'
+        if  os.path.isfile(fname) :
+            self.generator, epoch_ = load_model_from_checkpoints(checkpoint_path, 'checkpoint_gen_'+str(run)+'.t7')
         else:
             epoch_=0
 
