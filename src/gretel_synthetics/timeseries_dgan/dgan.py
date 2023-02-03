@@ -176,7 +176,6 @@ class DGAN:
         attributes: Optional[np.ndarray] = None,
         attribute_types: Optional[List[OutputType]] = None,
         progress_callback: Optional[Callable[[ProgressInfo]]] = None,
-        run,
     ) -> None:
         """Train DGAN model on data in numpy arrays.
 
@@ -213,7 +212,6 @@ class DGAN:
                 attributes are continuous. Ignored if the model was already
                 built, either by passing *output params at initialization or
                 because train_* was called previously.
-            run: run information indicator to save checkpoints while training
         """
         if attributes is not None:
             if attributes.shape[0] != features.shape[0]:
@@ -332,7 +330,7 @@ class DGAN:
             torch.Tensor(internal_features),
         )
 
-        self._train(dataset, progress_callback=progress_callback,run)
+        self._train(dataset, progress_callback=progress_callback)
 
     def train_dataframe(
         self,
@@ -344,7 +342,6 @@ class DGAN:
         discrete_columns: Optional[List[str]] = None,
         df_style: DfStyle = DfStyle.WIDE,
         progress_callback: Optional[Callable[[ProgressInfo]]] = None,
-        run,
     ) -> None:
         """Train DGAN model on data in pandas DataFrame.
 
@@ -375,7 +372,6 @@ class DGAN:
                 in [0,1,2,3...]
             df_style: str enum of "wide" or "long" indicating format of the
                 DataFrame
-            run : to indicate run information for saving checkpoints
         """
 
         if self.data_frame_converter is None:
@@ -462,7 +458,6 @@ class DGAN:
             attribute_types=self.data_frame_converter.attribute_types,
             feature_types=self.data_frame_converter.feature_types,
             progress_callback=progress_callback,
-            run,
         )
 
     def generate_numpy(
@@ -705,7 +700,6 @@ class DGAN:
         self,
         dataset: Dataset,
         progress_callback: Optional[Callable[[ProgressInfo]]] = None,
-        run,
     ):
         """Internal method for training DGAN model.
 
