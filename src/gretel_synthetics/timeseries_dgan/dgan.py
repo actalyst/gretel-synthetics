@@ -905,15 +905,15 @@ class DGAN:
 
             print(epoch)
 
-                if progress_callback is not None:
-                    progress_callback(
-                        ProgressInfo(
-                            epoch=epoch,
-                            total_epochs=self.config.epochs,
-                            batch=batch_idx,
-                            total_batches=len(loader),
+            if progress_callback is not None:
+                progress_callback(
+                    ProgressInfo(
+                        epoch=epoch,
+                        total_epochs=self.config.epochs,
+                        batch=batch_idx,
+                        total_batches=len(loader),
                         )
-                    )
+                        )
                 
 
     def _generate(
