@@ -83,7 +83,6 @@ NAN_ERROR_MESSAGE = """
 DGAN does not support NaNs, please remove NaNs before training. If there are no NaNs in your input data and you see this error, please create a support ticket.  # noqa
 """
 
-global run
 
 def _discrete_cols_to_int(
     df: pd.DataFrame, discrete_columns: Optional[List[str]]
@@ -177,6 +176,7 @@ class DGAN:
         attributes: Optional[np.ndarray] = None,
         attribute_types: Optional[List[OutputType]] = None,
         progress_callback: Optional[Callable[[ProgressInfo]]] = None,
+        run,
     ) -> None:
         """Train DGAN model on data in numpy arrays.
 
@@ -331,7 +331,7 @@ class DGAN:
             torch.Tensor(internal_features),
         )
 
-        self._train(dataset, progress_callback=progress_callback)
+        self._train(dataset, progress_callback=progress_callback,run)
 
     def train_dataframe(
         self,
@@ -458,7 +458,7 @@ class DGAN:
             features=features,
             attribute_types=self.data_frame_converter.attribute_types,
             feature_types=self.data_frame_converter.feature_types,
-            progress_callback=progress_callback,
+            progress_callback=progress_callback,run
         )
 
     def generate_numpy(
@@ -577,7 +577,7 @@ class DGAN:
     def _build(
         self,
         attribute_outputs: Optional[List[Output]],
-        feature_outputs: List[Output],
+        feature_outputs: List[Output],run,
     ):
         """Setup internal structure for DGAN model.
 
@@ -701,6 +701,7 @@ class DGAN:
         self,
         dataset: Dataset,
         progress_callback: Optional[Callable[[ProgressInfo]]] = None,
+        run,
     ):
         """Internal method for training DGAN model.
 
