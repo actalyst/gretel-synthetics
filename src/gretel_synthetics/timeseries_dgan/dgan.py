@@ -698,7 +698,7 @@ class DGAN:
 
                 self.generator.apply(init_weights)
 
-            self.is_built = True
+        self.is_built = True
 
     def _train(
         self,
