@@ -83,6 +83,7 @@ NAN_ERROR_MESSAGE = """
 DGAN does not support NaNs, please remove NaNs before training. If there are no NaNs in your input data and you see this error, please create a support ticket.  # noqa
 """
 
+global run
 
 def _discrete_cols_to_int(
     df: pd.DataFrame, discrete_columns: Optional[List[str]]
