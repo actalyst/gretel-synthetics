@@ -690,15 +690,19 @@ class DGAN:
 
             self.generator.apply(init_weights)
 
-        fname_gen = 'checkpoint_gen_'+str(run)+'.t7'
-        state_gen = torch.load(fname_gen)
-        fname_feat_disc = 'checkpoint_feat_disc_'+str(run)+'.t7'
-        state_feat_disc = torch.load(fname_feat_disc)
-        fname_att_disc = 'checkpoint_att_disc_'+str(run)+'.t7'
-        state_att_disc = torch.load(fname_att_disc)
-        self.generator.load_state_dict(state_gen['state_dict'])
-        self.feature_discriminator.load_state_dict(state_feat_disc['state_dict'])
-        self.attribute_discriminator.load_state_dict(state_att_disc['state_dict'])
+        
+        fname = 'checkpoint_gen_'+str(run)+'.t7'
+        if os.path.isfile(fname) :
+            fname_gen = 'checkpoint_gen_'+str(run)+'.t7'
+            state_gen = torch.load(fname_gen)
+            fname_feat_disc = 'checkpoint_feat_disc_'+str(run)+'.t7'
+            state_feat_disc = torch.load(fname_feat_disc)
+            fname_att_disc = 'checkpoint_att_disc_'+str(run)+'.t7'
+            state_att_disc = torch.load(fname_att_disc)
+            self.generator.load_state_dict(state_gen['state_dict'])
+            self.feature_discriminator.load_state_dict(state_feat_disc['state_dict'])
+            self.attribute_discriminator.load_state_dict(state_att_disc['state_dict'])
+        
 
         self.is_built = True
 
@@ -745,6 +749,27 @@ class DGAN:
         )
 
         fname = 'checkpoint_gen_'+str(run)+'.t7'
+        
+        opt_discriminator = torch.optim.Adam(
+            self.feature_discriminator.parameters(),
+            lr=self.config.discriminator_learning_rate,
+            betas=(self.config.discriminator_beta1, 0.999),
+        )
+
+        opt_attribute_discriminator = None
+        if self.attribute_discriminator is not None:
+            opt_attribute_discriminator = torch.optim.Adam(
+                self.attribute_discriminator.parameters(),
+                lr=self.config.attribute_discriminator_learning_rate,
+                betas=(self.config.attribute_discriminator_beta1, 0.999),
+            )
+
+        opt_generator = torch.optim.Adam(
+            self.generator.parameters(),
+            lr=self.config.generator_learning_rate,
+            betas=(self.config.generator_beta1, 0.999),
+        )
+
         if os.path.isfile(fname) :
             fname_gen = 'checkpoint_gen_'+str(run)+'.t7'
             state_gen = torch.load(fname_gen)
@@ -757,28 +782,7 @@ class DGAN:
             opt_discriminator = load_state_dict(state_feat_disc['opt_feature_discriminator'])
             opt_attribute_discriminator = load_state_dict(state_att_disc['opt_attribute_discriminator'])
 
-            epoch = load_state_dict(state_gen['epoch'])
 
-        else :
-            opt_discriminator = torch.optim.Adam(
-                self.feature_discriminator.parameters(),
-                lr=self.config.discriminator_learning_rate,
-                betas=(self.config.discriminator_beta1, 0.999),
-            )
-
-            opt_attribute_discriminator = None
-            if self.attribute_discriminator is not None:
-                opt_attribute_discriminator = torch.optim.Adam(
-                    self.attribute_discriminator.parameters(),
-                    lr=self.config.attribute_discriminator_learning_rate,
-                    betas=(self.config.attribute_discriminator_beta1, 0.999),
-                )
-
-            opt_generator = torch.optim.Adam(
-                self.generator.parameters(),
-                lr=self.config.generator_learning_rate,
-                betas=(self.config.generator_beta1, 0.999),
-            )
 
         global_step = 0
 
@@ -790,7 +794,8 @@ class DGAN:
         if  os.path.isfile(fname) :
             fname_gen = 'checkpoint_gen_'+str(run)+'.t7'
             state_gen = torch.load(fname_gen)
-            epoch_ = load_state_dict(state_gen['epoch'])
+            epoch_=0
+            epoch_.load_state_dict(state_gen['epoch'])
         else:
             epoch_=0
 
