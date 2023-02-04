@@ -602,7 +602,7 @@ class DGAN:
         else:
             self.device = "cpu"
 
-        fname = '/checkpoints/' + 'checkpoint_gen_'+str(run)+'.t7'
+        fname = 'checkpoint_gen_'+str(run)+'.t7'
 
         if os.path.isfile(fname) :
 
@@ -769,9 +769,9 @@ class DGAN:
         self._set_mode(True)
         scaler = torch.cuda.amp.GradScaler(enabled=self.config.mixed_precision_training)
 
-        fname = '/checkpoints/'+'checkpoint_gen_'+str(run)+'.t7'
+        fname = 'checkpoint_gen_'+str(run)+'.t7'
         if  os.path.isfile(fname) :
-            self.generator, epoch_ = load_model_from_checkpoints(checkpoint_path, 'checkpoint_gen_'+str(run)+'.t7')
+            self.generator, epoch_ = load_model_from_checkpoints('checkpoint_gen_'+str(run)+'.t7')
         else:
             epoch_=0
 
@@ -887,20 +887,20 @@ class DGAN:
                 state_disc = {'epoch': epoch,
                                 'state_dict': self.feature_discriminator.state_dict(),
                                 'opt_discriminator': opt_discriminator.state_dict(),}
-                savepath_disc='/checkpoints/checkpoint_disc.t7'
+                savepath_disc='checkpoint_disc_'+str(run)+'.t7'
                 torch.save(state_disc,savepath_disc)
 
             if (epoch%50)==0:
                 state_att_disc = {'epoch': epoch,
                                 'state_dict': self.attribute_discriminator.state_dict(),
                                 'opt_attribute_discriminator': opt_attribute_discriminator.state_dict(),}
-                savepath_disc='/checkpoints/checkpoint_att_disc.t7'
+                savepath_disc='checkpoint_att_disc_' + str(run)+'.t7'
                 torch.save(state_att_disc,savepath_disc)
             if (epoch%50)==0:
                 state_gen = {'epoch': epoch,
                                 'state_dict': self.generator.state_dict(),
                                 'opt_generator': opt_generator.state_dict(),}
-                savepath_disc='/checkpoints/checkpoint_gen.t7'
+                savepath_disc='checkpoint_gen_'+str(run)+'.t7'
                 torch.save(state_gen,savepath_disc)
 
             print(epoch)
