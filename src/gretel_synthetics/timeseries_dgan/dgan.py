@@ -68,6 +68,7 @@ from gretel_synthetics.timeseries_dgan.transformations import (
     transform,
 )
 from torch.utils.data import DataLoader, Dataset, TensorDataset
+from torch.nn.Module import load_state_dict
 
 logger = logging.getLogger(__name__)
 
@@ -603,6 +604,7 @@ class DGAN:
             self.device = "cpu"
 
         fname = 'checkpoint_gen_'+str(run)+'.t7'
+
         if os.path.isfile(fname) :
             fname_gen = 'checkpoint_gen_'+str(run)+'.t7'
             state_gen = torch.load(fname_gen)
