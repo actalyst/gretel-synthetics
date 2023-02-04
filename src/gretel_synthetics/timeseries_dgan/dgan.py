@@ -909,7 +909,7 @@ class DGAN:
                 state_disc = {'epoch': epoch,
                                 'state_dict': self.feature_discriminator.state_dict(),
                                 'opt_feature_discriminator': opt_discriminator.state_dict(),}
-                savepath_disc='checkpoint_disc_'+str(run)+'.t7'
+                savepath_disc='checkpoint_feat_disc_'+str(run)+'.t7'
                 torch.save(state_disc,savepath_disc)
 
             if (epoch%50)==0:
