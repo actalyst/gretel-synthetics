@@ -171,12 +171,12 @@ class DGAN:
 
     def train_numpy(
         self,
+        run,
         features: np.ndarray,
         feature_types: Optional[List[OutputType]] = None,
         attributes: Optional[np.ndarray] = None,
         attribute_types: Optional[List[OutputType]] = None,
         progress_callback: Optional[Callable[[ProgressInfo]]] = None,
-        run,
     ) -> None:
         """Train DGAN model on data in numpy arrays.
 
@@ -335,6 +335,7 @@ class DGAN:
 
     def train_dataframe(
         self,
+        run,
         df: pd.DataFrame,
         attribute_columns: Optional[List[str]] = None,
         feature_columns: Optional[List[str]] = None,
@@ -454,11 +455,12 @@ class DGAN:
         attributes, features = self.data_frame_converter.convert(df)
 
         self.train_numpy(
+            run,
             attributes=attributes,
             features=features,
             attribute_types=self.data_frame_converter.attribute_types,
             feature_types=self.data_frame_converter.feature_types,
-            progress_callback=progress_callback,run
+            progress_callback=progress_callback,
         )
 
     def generate_numpy(
@@ -576,8 +578,9 @@ class DGAN:
 
     def _build(
         self,
+        run,
         attribute_outputs: Optional[List[Output]],
-        feature_outputs: List[Output],run,
+        feature_outputs: List[Output],
     ):
         """Setup internal structure for DGAN model.
 
@@ -699,9 +702,9 @@ class DGAN:
 
     def _train(
         self,
+        run,
         dataset: Dataset,
         progress_callback: Optional[Callable[[ProgressInfo]]] = None,
-        run,
     ):
         """Internal method for training DGAN model.
 
