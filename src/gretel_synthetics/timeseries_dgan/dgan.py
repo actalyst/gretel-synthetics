@@ -68,7 +68,6 @@ from gretel_synthetics.timeseries_dgan.transformations import (
     transform,
 )
 from torch.utils.data import DataLoader, Dataset, TensorDataset
-from torch.nn.Module import load_state_dict
 
 logger = logging.getLogger(__name__)
 
