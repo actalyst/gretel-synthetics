@@ -748,8 +748,6 @@ class DGAN:
             multiprocessing_context="fork",
         )
 
-        fname = 'checkpoint_gen_'+str(run)+'.t7'
-        
         opt_discriminator = torch.optim.Adam(
             self.feature_discriminator.parameters(),
             lr=self.config.discriminator_learning_rate,
@@ -770,6 +768,7 @@ class DGAN:
             betas=(self.config.generator_beta1, 0.999),
         )
 
+        fname = 'checkpoint_gen_'+str(run)+'.t7'
         if os.path.isfile(fname) :
             fname_gen = 'checkpoint_gen_'+str(run)+'.t7'
             state_gen = torch.load(fname_gen)
@@ -778,9 +777,9 @@ class DGAN:
             fname_att_disc = 'checkpoint_att_disc_'+str(run)+'.t7'
             state_att_disc = torch.load(fname_att_disc)
            
-            opt_generator = load_state_dict(state_gen['opt_generator'])
-            opt_discriminator = load_state_dict(state_feat_disc['opt_feature_discriminator'])
-            opt_attribute_discriminator = load_state_dict(state_att_disc['opt_attribute_discriminator'])
+            opt_generator.load_state_dict(state_gen['opt_generator'])
+            opt_discriminator.load_state_dict(state_feat_disc['opt_feature_discriminator'])
+            opt_attribute_discriminator.load_state_dict(state_att_disc['opt_attribute_discriminator'])
 
 
 
