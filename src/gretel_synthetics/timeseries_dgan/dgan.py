@@ -331,7 +331,7 @@ class DGAN:
             torch.Tensor(internal_features),
         )
 
-        self._train(dataset, progress_callback=progress_callback,run)
+        self._train(run,dataset, progress_callback=progress_callback)
 
     def train_dataframe(
         self,
