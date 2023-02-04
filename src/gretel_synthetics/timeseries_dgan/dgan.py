@@ -603,7 +603,6 @@ class DGAN:
             self.device = "cpu"
 
         fname = 'checkpoint_gen_'+str(run)+'.t7'
-
         if os.path.isfile(fname) :
             fname_gen = 'checkpoint_gen_'+str(run)+'.t7'
             state_gen = torch.load(fname_gen)
@@ -748,6 +747,7 @@ class DGAN:
             multiprocessing_context="fork",
         )
 
+        fname = 'checkpoint_gen_'+str(run)+'.t7'
         if os.path.isfile(fname) :
             fname_gen = 'checkpoint_gen_'+str(run)+'.t7'
             state_gen = torch.load(fname_gen)
