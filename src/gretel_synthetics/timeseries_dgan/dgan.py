@@ -161,7 +161,7 @@ class DGAN:
             )
 
         if feature_outputs is not None and attribute_outputs is not None:
-            self._build(attribute_outputs, feature_outputs)
+            self._build(run,attribute_outputs, feature_outputs)
         elif feature_outputs is not None or attribute_outputs is not None:
             raise RuntimeError(
                 "feature_outputs and attribute_ouputs must either both be given or both be None"
@@ -273,6 +273,7 @@ class DGAN:
             )
 
             self._build(
+                run,
                 attribute_outputs,
                 feature_outputs,
             )
@@ -1110,7 +1111,7 @@ class DGAN:
         config = DGANConfig(**state["config"])
         dgan = DGAN(config)
 
-        dgan._build(state["attribute_outputs"], state["feature_outputs"])
+        dgan._build(run,state["attribute_outputs"], state["feature_outputs"])
 
         dgan.generator.load_state_dict(state["generate_state_dict"])
         dgan.feature_discriminator.load_state_dict(
