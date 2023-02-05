@@ -793,8 +793,9 @@ class DGAN:
         if  os.path.isfile(fname) :
             fname_gen = 'checkpoint_gen_'+str(run)+'.t7'
             state_gen = torch.load(fname_gen)
-            epoch_=0
-            epoch_.load_state_dict(state_gen['epoch'])
+            # epoch_=0
+            epoch_ = state_gen['epoch']
+            epoch_ = int(epoch_)+1
         else:
             epoch_=0
 
