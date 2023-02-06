@@ -698,7 +698,7 @@ class DGAN:
         file_name = 'checkpoint_gen_'+str(run)+'.t7'
 
         try:
-            s3.head_object(Bucket=bucket, Key=folder + file_name)
+            s3.head_object(Bucket=bucket_name, Key=folder + file_name)
             check_file = True
         except s3.exceptions.ClientError as e:
             if e.response['Error']['Code'] == '404':
@@ -796,7 +796,7 @@ class DGAN:
         file_name = 'checkpoint_gen_'+str(run)+'.t7'
 
         try:
-            s3.head_object(Bucket=bucket, Key=folder + file_name)
+            s3.head_object(Bucket=bucket_name, Key=folder + file_name)
             check_file = True
         except s3.exceptions.ClientError as e:
             if e.response['Error']['Code'] == '404':
