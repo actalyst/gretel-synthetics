@@ -963,13 +963,13 @@ class DGAN:
                                 'opt_attribute_discriminator': opt_attribute_discriminator.state_dict(),}
                 torch.save(state_att_disc,filename[2])
                     
-            s3 = boto3.client('s3')
-            bucket_name = 'hrmsyntheticdata'
-            folder = 'hrm_synthetic/model_ckpts/'
+                s3 = boto3.client('s3')
+                bucket_name = 'hrmsyntheticdata'
+                folder = 'hrm_synthetic/model_ckpts/'
 
-            for i in filename:
-                s3.upload_file(i, bucket_name, folder+str(i))
-                os.remove(i)
+                for i in filename:
+                    s3.upload_file(i, bucket_name, folder+str(i))
+                    os.remove(i)
 
             print(epoch)
 
