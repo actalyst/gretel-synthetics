@@ -57,6 +57,7 @@ import numpy as np
 import pandas as pd
 import torch
 import os
+import boto3
 from gretel_synthetics.timeseries_dgan.config import DfStyle, DGANConfig, OutputType
 from gretel_synthetics.timeseries_dgan.structures import ProgressInfo
 from gretel_synthetics.timeseries_dgan.torch_modules import Discriminator, Generator
@@ -690,15 +691,34 @@ class DGAN:
 
             self.generator.apply(init_weights)
 
-        
-        fname = 'checkpoint_gen_'+str(run)+'.t7'
-        if os.path.isfile(fname) :
-            fname_gen = 'checkpoint_gen_'+str(run)+'.t7'
-            state_gen = torch.load(fname_gen)
-            fname_feat_disc = 'checkpoint_feat_disc_'+str(run)+'.t7'
-            state_feat_disc = torch.load(fname_feat_disc)
-            fname_att_disc = 'checkpoint_att_disc_'+str(run)+'.t7'
-            state_att_disc = torch.load(fname_att_disc)
+
+        bucket_name = 'hrmsyntheticdata'
+        folder = 'hrm_synthetic/model_ckpts/'
+        file_name = 'checkpoint_gen_'+str(run)+'.t7'
+
+        try:
+            s3.head_object(Bucket=bucket, Key=folder + file_name)
+            check_file = True
+        except s3.exceptions.ClientError as e:
+            if e.response['Error']['Code'] == '404':
+                check_file = False
+            else:
+                raise e
+
+        if check_file :
+            bucket_name = 'hrmsyntheticdata'
+            folder = 'hrm_synthetic/model_ckpts/'
+            filename = []
+            mod = ['gen_','feat_disc_','att_disc_']
+            for i in mod:
+                filename.append('checkpoint_'+str(i)+str(run_)+'.t7')
+            # Copy the file from S3 to the local file system
+            for i in filename:
+                s3.download_file(bucket_name, folder+str(i), i) 
+
+            state_gen = torch.load(filename[0])
+            state_feat_disc = torch.load(filename[1])
+            state_att_disc = torch.load(filename[2])
             self.generator.load_state_dict(state_gen['state_dict'])
             self.feature_discriminator.load_state_dict(state_feat_disc['state_dict'])
             self.attribute_discriminator.load_state_dict(state_att_disc['state_dict'])
@@ -768,18 +788,42 @@ class DGAN:
             betas=(self.config.generator_beta1, 0.999),
         )
 
-        fname = 'checkpoint_gen_'+str(run)+'.t7'
-        if os.path.isfile(fname) :
-            fname_gen = 'checkpoint_gen_'+str(run)+'.t7'
-            state_gen = torch.load(fname_gen)
-            fname_feat_disc = 'checkpoint_feat_disc_'+str(run)+'.t7'
-            state_feat_disc = torch.load(fname_feat_disc)
-            fname_att_disc = 'checkpoint_att_disc_'+str(run)+'.t7'
-            state_att_disc = torch.load(fname_att_disc)
+        bucket_name = 'hrmsyntheticdata'
+        folder = 'hrm_synthetic/model_ckpts/'
+        file_name = 'checkpoint_gen_'+str(run)+'.t7'
+
+        try:
+            s3.head_object(Bucket=bucket, Key=folder + file_name)
+            check_file = True
+        except s3.exceptions.ClientError as e:
+            if e.response['Error']['Code'] == '404':
+                check_file = False
+            else:
+                raise e
+
+        if check_file :
+            bucket_name = 'hrmsyntheticdata'
+            folder = 'hrm_synthetic/model_ckpts/'
+            filename = []
+            mod = ['gen_','feat_disc_','att_disc_']
+            for i in mod:
+                filename.append('checkpoint_'+str(i)+str(run_)+'.t7')
+            # Copy the file from S3 to the local file system
+            for i in filename:
+                s3.download_file(bucket_name, folder+str(i), i) 
+            
+            state_gen = torch.load(filename[0])
+            state_feat_disc = torch.load(filename[1])
+            state_att_disc = torch.load(filename[2])
            
             opt_generator.load_state_dict(state_gen['opt_generator'])
             opt_discriminator.load_state_dict(state_feat_disc['opt_feature_discriminator'])
             opt_attribute_discriminator.load_state_dict(state_att_disc['opt_attribute_discriminator'])
+
+            epoch_ = state_gen['epoch']
+            epoch_ = int(epoch_)+1
+        else:
+            epoch_=0
 
 
 
@@ -788,16 +832,6 @@ class DGAN:
         # Set torch modules to training mode
         self._set_mode(True)
         scaler = torch.cuda.amp.GradScaler(enabled=self.config.mixed_precision_training)
-
-        fname = 'checkpoint_gen_'+str(run)+'.t7'
-        if  os.path.isfile(fname) :
-            fname_gen = 'checkpoint_gen_'+str(run)+'.t7'
-            state_gen = torch.load(fname_gen)
-            # epoch_=0
-            epoch_ = state_gen['epoch']
-            epoch_ = int(epoch_)+1
-        else:
-            epoch_=0
 
         for epoch in range(epoch_,self.config.epochs):
             logger.info(f"epoch: {epoch}")
@@ -907,25 +941,31 @@ class DGAN:
                     scaler.step(opt_generator)
                     scaler.update()
 
-            if (epoch%50)==0:
-                state_disc = {'epoch': epoch,
-                                'state_dict': self.feature_discriminator.state_dict(),
-                                'opt_feature_discriminator': opt_discriminator.state_dict(),}
-                savepath_disc='checkpoint_feat_disc_'+str(run)+'.t7'
-                torch.save(state_disc,savepath_disc)
+            filename = []
+            mod = ['gen_','feat_disc_','att_disc_']
+            for i in mod:
+            filename.append('checkpoint_'+str(i)+str(run_)+'.t7')
 
-            if (epoch%50)==0:
-                state_att_disc = {'epoch': epoch,
-                                'state_dict': self.attribute_discriminator.state_dict(),
-                                'opt_attribute_discriminator': opt_attribute_discriminator.state_dict(),}
-                savepath_disc='checkpoint_att_disc_' + str(run)+'.t7'
-                torch.save(state_att_disc,savepath_disc)
-            if (epoch%50)==0:
+            if ((epoch%50)==0) & (epoch>0):
                 state_gen = {'epoch': epoch,
                                 'state_dict': self.generator.state_dict(),
                                 'opt_generator': opt_generator.state_dict(),}
-                savepath_disc='checkpoint_gen_'+str(run)+'.t7'
-                torch.save(state_gen,savepath_disc)
+                torch.save(state_gen,filename[0])
+                state_disc = {'epoch': epoch,
+                                'state_dict': self.feature_discriminator.state_dict(),
+                                'opt_feature_discriminator': opt_discriminator.state_dict(),}
+                torch.save(state_disc,filename[1])
+                state_att_disc = {'epoch': epoch,
+                                'state_dict': self.attribute_discriminator.state_dict(),
+                                'opt_attribute_discriminator': opt_attribute_discriminator.state_dict(),}
+                torch.save(state_att_disc,filename[2])
+                    
+            bucket_name = 'hrmsyntheticdata'
+            folder = 'hrm_synthetic/model_ckpts/'
+
+            for i in filename:
+                s3.upload_file(i, bucket_name, folder+str(i))
+                os.remove(i)
 
             print(epoch)
 
