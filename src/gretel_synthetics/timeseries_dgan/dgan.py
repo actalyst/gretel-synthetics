@@ -713,7 +713,7 @@ class DGAN:
             filename = []
             mod = ['gen_','feat_disc_','att_disc_']
             for i in mod:
-                filename.append('checkpoint_'+str(i)+str(run_)+'.t7')
+                filename.append('checkpoint_'+str(i)+str(run)+'.t7')
             # Copy the file from S3 to the local file system
             for i in filename:
                 s3.download_file(bucket_name, folder+str(i), i) 
@@ -810,7 +810,7 @@ class DGAN:
             filename = []
             mod = ['gen_','feat_disc_','att_disc_']
             for i in mod:
-                filename.append('checkpoint_'+str(i)+str(run_)+'.t7')
+                filename.append('checkpoint_'+str(i)+str(run)+'.t7')
             # Copy the file from S3 to the local file system
             for i in filename:
                 s3.download_file(bucket_name, folder+str(i), i) 
@@ -947,7 +947,7 @@ class DGAN:
             filename = []
             mod = ['gen_','feat_disc_','att_disc_']
             for i in mod:
-                filename.append('checkpoint_'+str(i)+str(run_)+'.t7')
+                filename.append('checkpoint_'+str(i)+str(run)+'.t7')
 
             if ((epoch%50)==0) & (epoch>0):
                 state_gen = {'epoch': epoch,
