@@ -692,6 +692,7 @@ class DGAN:
             self.generator.apply(init_weights)
 
 
+        s3 = boto3.client('s3')
         bucket_name = 'hrmsyntheticdata'
         folder = 'hrm_synthetic/model_ckpts/'
         file_name = 'checkpoint_gen_'+str(run)+'.t7'
@@ -706,6 +707,7 @@ class DGAN:
                 raise e
 
         if check_file :
+            s3 = boto3.client('s3')
             bucket_name = 'hrmsyntheticdata'
             folder = 'hrm_synthetic/model_ckpts/'
             filename = []
@@ -787,7 +789,8 @@ class DGAN:
             lr=self.config.generator_learning_rate,
             betas=(self.config.generator_beta1, 0.999),
         )
-
+        
+        s3 = boto3.client('s3')
         bucket_name = 'hrmsyntheticdata'
         folder = 'hrm_synthetic/model_ckpts/'
         file_name = 'checkpoint_gen_'+str(run)+'.t7'
@@ -960,6 +963,7 @@ class DGAN:
                                 'opt_attribute_discriminator': opt_attribute_discriminator.state_dict(),}
                 torch.save(state_att_disc,filename[2])
                     
+            s3 = boto3.client('s3')
             bucket_name = 'hrmsyntheticdata'
             folder = 'hrm_synthetic/model_ckpts/'
 
