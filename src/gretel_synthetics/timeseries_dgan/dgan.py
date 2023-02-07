@@ -1161,7 +1161,7 @@ class DGAN:
         torch.save(state, file_name, **kwargs)
 
     @classmethod
-    def load(cls, file_name: str, **kwargs) -> DGAN:
+    def load(cls, run,file_name: str, **kwargs) -> DGAN:
         """Load DGAN model instance from a file.
 
         Args:
