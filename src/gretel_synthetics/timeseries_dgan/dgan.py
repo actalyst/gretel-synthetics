@@ -1,8 +1,6 @@
 """
 PyTorch implementation of DoppelGANger, from https://arxiv.org/abs/1909.13403
-
 Based on tensorflow 1 code in https://github.com/fjxmlzn/DoppelGANger
-
 DoppelGANger is a generative adversarial network (GAN) model for time series. It
 supports multi-variate time series (referred to as features) and fixed variables
 for each time series (attributes). The combination of attribute values and
@@ -10,14 +8,12 @@ sequence of feature values is 1 example. Once trained, the model can generate
 novel examples that exhibit the same temporal correlations as seen in the
 training data. See https://arxiv.org/abs/1909.13403 for additional details on
 the model.
-
 As a reference for terminology, consider open-high-low-close (OHLC) data from
 stock markets. Each stock is an example, with fixed attributes such as exchange,
 sector, country. The features or time series consists of open, high, low, and
 closing prices for each time interval (daily). After being trained on historical
 data, the model can generate more hypothetical stocks and price behavior on the
 training time range.
-
 Modified by Aravind for Actalyst usage
 """
 
@@ -89,10 +85,8 @@ def _discrete_cols_to_int(
 class DGAN:
     """
     DoppelGANger model.
-
     Interface for training model and generating data based on configuration in
     an DGANConfig instance.
-
     DoppelGANger uses a specific internal representation for data which is
     hidden from the user in the public interface. Continuous variables should be
     in the original space and discrete variables represented as [0.0, 1.0, 2.0,
@@ -101,7 +95,6 @@ class DGAN:
     original space. In standard usage, the detailed transformation info in
     attribute_outputs and feature_outputs are not needed, those will be created
     automatically when a train* function is called with data.
-
     If more control is needed and you want to use the normalized values and
     one-hot encoding directly, use the _train() and _generate() functions.
     transformations.py contains internal helper functions for working with the
@@ -111,7 +104,6 @@ class DGAN:
     used in DGAN. As internal details, transformations.py and torch_modules.py
     are not part of the public interface and may change at any time without
     notice.
-
     """
 
     def __init__(
@@ -121,7 +113,6 @@ class DGAN:
         feature_outputs: Optional[List[Output]] = None,
     ):
         """Create a DoppelGANger model.
-
         Args:
             config: DGANConfig containing model parameters
             attribute_outputs: custom metadata for attributes, not needed for
@@ -157,7 +148,6 @@ class DGAN:
         progress_callback: Optional[Callable[[ProgressInfo]]] = None,
     ) -> None:
         """Train DGAN model on data in numpy arrays.
-
         Training data is passed in 2 numpy arrays, one for attributes (2d) and
         one for features (3d). This data should be in the original space and is
         not transformed. If the data is already transformed into the internal
@@ -165,14 +155,12 @@ class DGAN:
         discrete variables one-hot encoded), use the internal _train() function
         instead of train_numpy(), or specify apply_feature_scaling=False in the
         DGANConfig.
-
         In standard usage, attribute_types and feature_types should be provided
         on the first call to train() to correctly setup the model structure. If
         not specified, the default is to assume continuous variables. If outputs
         metadata was specified when the instance was initialized or train() was
         previously called, then attribute_types and feature_types are not
         needed.
-
         Args:
             features: 3-d numpy array of time series features for the training,
                 size is (# of training examples) X max_sequence_len X (# of
@@ -325,14 +313,12 @@ class DGAN:
         progress_callback: Optional[Callable[[ProgressInfo]]] = None,
     ) -> None:
         """Train DGAN model on data in pandas DataFrame.
-
         Training data can be in either "wide" or "long" format. "Wide" format
         uses one row for each example with 0 or more attribute columns and 1
         column per time point in the time series. "Wide" format is restricted to
         1 feature variable. "Long" format uses one row per time point, supports
         multiple feature variables, and uses additional example id to split into
         examples and time column to sort.
-
         Args:
             df: DataFrame of training data
             attribute_columns: list of column names containing attributes, if None,
@@ -449,16 +435,13 @@ class DGAN:
         feature_noise: Optional[torch.Tensor] = None,
     ) -> AttributeFeaturePair:
         """Generate synthetic data from DGAN model.
-
         Once trained, a DGAN model can generate arbitrary amounts of
         synthetic data by sampling from the noise distributions. Specify either
         the number of records to generate, or the specific noise vectors to use.
-
         Args:
             n: number of examples to generate
             attribute_noise: noise vectors to create synthetic data
             feature_noise: noise vectors to create synthetic data
-
         Returns:
             Tuple of attributes and features as numpy arrays.
         """
@@ -487,8 +470,10 @@ class DGAN:
             for _ in range(num_batches):
                 internal_data_list.append(
                     self._generate(
-                    self.attribute_noise_func(self.config.batch_size),
-                    self.feature_noise_func(self.config.batch_size),))
+                        self.attribute_noise_func(self.config.batch_size),
+                        self.feature_noise_func(self.config.batch_size),
+                    )
+                )
             # Convert from list of tuples to tuple of lists with zip(*) and
             # concatenate into single numpy arrays for attributes, additional
             # attributes (if present), and features.
@@ -547,16 +532,13 @@ class DGAN:
         feature_noise: Optional[torch.Tensor] = None,
     ) -> pd.DataFrame:
         """Generate synthetic data from DGAN model.
-
         Once trained, a DGAN model can generate arbitrary amounts of
         synthetic data by sampling from the noise distributions. Specify either
         the number of records to generate, or the specific noise vectors to use.
-
         Args:
             n: number of examples to generate
             attribute_noise: noise vectors to create synthetic data
             feature_noise: noise vectors to create synthetic data
-
         Returns:
             pandas DataFrame in same format used in 'train_dataframe' call
         """
@@ -572,7 +554,6 @@ class DGAN:
         feature_outputs: List[Output],
     ):
         """Setup internal structure for DGAN model.
-
         Args:
             attribute_outputs: custom metadata for attributes
             feature_outputs: custom metadata for features
@@ -722,14 +703,12 @@ class DGAN:
         progress_callback: Optional[Callable[[ProgressInfo]]] = None,
     ):
         """Internal method for training DGAN model.
-
         Expects data to already be transformed into the internal representation
         and wrapped in a torch Dataset. The torch Dataset consists of 3-element
         tuples (attributes, additional_attributes, features). If attributes and/or
         additional_attribtues were not passed by the user, these indexes of the
         tuple will consists of nan-filled tensors which will later be filtered
         out and ignored in the DGAN training process.
-
         Args:
             dataset: torch Dataset containing tuple of (attributes, additional_attributes, features)
         """
@@ -975,15 +954,12 @@ class DGAN:
         self, attribute_noise: torch.Tensor, feature_noise: torch.Tensor
     ) -> NumpyArrayTriple:
         """Internal method for generating from a DGAN model.
-
         Returns data in the internal representation, including additional
         attributes for the midpoint and half-range for features when
         apply_example_scaling is True for some features.
-
         Args:
             attribute_noise: noise vectors to create synthetic data
             feature_noise: noise vectors to create synthetic data
-
         Returns:
             Tuple of generated data in internal representation. If additional
             attributes are used in the model, the tuple is 3 elements:
@@ -1001,10 +977,8 @@ class DGAN:
         batch,
     ) -> torch.Tensor:
         """Internal helper function to apply the GAN discriminator.
-
         Args:
             batch: internal data representation
-
         Returns:
             Output of the GAN discriminator.
         """
@@ -1022,11 +996,9 @@ class DGAN:
 
     def _discriminate_attributes(self, batch) -> torch.Tensor:
         """Internal helper function to apply the GAN attribute discriminator.
-
         Args:
             batch: tuple of internal data of size 2 elements
             containing attributes and additional_attributes.
-
         Returns:
             Output for GAN attribute discriminator.
         """
@@ -1046,13 +1018,11 @@ class DGAN:
     ) -> torch.Tensor:
         """Internal helper function to compute the gradient penalty component of
         DoppelGANger loss.
-
         Args:
             generated_batch: internal data from the generator
             real_batch: internal data for the training batch
             discriminator_func: function to apply discriminator to interpolated
                 data
-
         Returns:
             Gradient penalty tensor.
         """
@@ -1093,12 +1063,10 @@ class DGAN:
         self, x1: torch.Tensor, x2: torch.Tensor, alpha: torch.Tensor
     ) -> torch.Tensor:
         """Internal helper function to interpolate between 2 tensors.
-
         Args:
             x1: tensor
             x2: tensor
             alpha: scale or 1d tensor with values in [0,1]
-
         Returns:
             x1 + alpha * (x2 - x1)
         """
@@ -1111,7 +1079,6 @@ class DGAN:
 
     def _set_mode(self, mode: bool = True):
         """Set torch module training mode.
-
         Args:
             train_mode: whether to set training mode (True) or evaluation mode
                 (False). Default: True
@@ -1123,7 +1090,6 @@ class DGAN:
 
     def save(self, file_name: str, **kwargs):
         """Save DGAN model to a file.
-
         Args:
             file_name: location to save serialized model
             kwargs: additional parameters passed to torch.save
@@ -1146,16 +1112,15 @@ class DGAN:
     @classmethod
     def load(cls, run,file_name: str, **kwargs) -> DGAN:
         """Load DGAN model instance from a file.
-
         Args:
             file_name: location to load from
             kwargs: additional parameters passed to torch.load, for example, use
                 map_location=torch.device("cpu") to load a model saved for GPU on
                 a machine without cuda
-
         Returns:
             DGAN model instance
         """
+
         state = torch.load(file_name, **kwargs)
 
         config = DGANConfig(**state["config"])
@@ -1164,30 +1129,24 @@ class DGAN:
         dgan._build(run,state["attribute_outputs"], state["feature_outputs"])
 
         dgan.generator.load_state_dict(state["generate_state_dict"])
-        if torch.cuda.is_available():
-            device = torch.device("cuda")
-            dgan.generator.to(device)
-
-        dgan.feature_discriminator.load_state_dict(state["feature_discriminator_state_dict"])
-        if torch.cuda.is_available():
-            device = torch.device("cuda")
-            dgan.feature_discriminator.to(device)
-
+        dgan.feature_discriminator.load_state_dict(
+            state["feature_discriminator_state_dict"]
+        )
         if "attribute_discriminator_state_dict" in state:
             if dgan.attribute_discriminator is None:
                 raise RuntimeError(
                     "Error deserializing model: found unexpected attribute discriminator state in file"
                 )
-            dgan.attribute_discriminator.load_state_dict(state["attribute_discriminator_state_dict"])
-            if torch.cuda.is_available():
-                device = torch.device("cuda")
-                dgan.attribute_discriminator.to(device)
+
+            dgan.attribute_discriminator.load_state_dict(
+                state["attribute_discriminator_state_dict"]
+            )
 
         if "data_frame_converter" in state:
-            dgan.data_frame_converter = _DataFrameConverter.load_from_state_dict(state["data_frame_converter"])
-            if torch.cuda.is_available():
-                device = torch.device("cuda")
-                dgan.data_frame_converter.to(device)
+            dgan.data_frame_converter = _DataFrameConverter.load_from_state_dict(
+                state["data_frame_converter"]
+            )
+
         return dgan
 
 
@@ -1215,10 +1174,8 @@ class _DataFrameConverter(abc.ABC):
     @abc.abstractmethod
     def convert(self, df: pd.DataFrame) -> AttributeFeaturePair:
         """Convert DataFrame to DGAN input format.
-
         Args:
             df: DataFrame of training data
-
         Returns:
             Attribute (optional) and feature numpy arrays.
         """
@@ -1229,11 +1186,9 @@ class _DataFrameConverter(abc.ABC):
         self, attributes: Optional[np.ndarray], features: np.ndarray
     ) -> pd.DataFrame:
         """Invert from DGAN input format back to DataFrame.
-
         Args:
             attributes: 2d numpy array of attributes
             features: 3d numpy array of features
-
         Returns:
             DataFrame representing attributes and features in original format.
         """
@@ -1264,7 +1219,6 @@ class _DataFrameConverter(abc.ABC):
 
 class _WideDataFrameConverter(_DataFrameConverter):
     """Convert "wide" format DataFrames.
-
     Expects one row for each example with 0 or more attribute columns and 1
     column per time point in the time series.
     """
@@ -1295,7 +1249,6 @@ class _WideDataFrameConverter(_DataFrameConverter):
         discrete_columns: Optional[List[str]] = None,
     ) -> _WideDataFrameConverter:
         """Create a converter instance.
-
         See `train_dataframe` for parameter details.
         """
         if attribute_columns is None:
@@ -1403,7 +1356,6 @@ class _WideDataFrameConverter(_DataFrameConverter):
 
 class _LongDataFrameConverter(_DataFrameConverter):
     """Convert "long" format DataFrames.
-
     Expects one row per time point. Splits into examples based on specified
     example id column.
     """
@@ -1442,7 +1394,6 @@ class _LongDataFrameConverter(_DataFrameConverter):
         discrete_columns: Optional[List[str]] = None,
     ):
         """Create a converter instance.
-
         See `train_dataframe` for parameter details.
         """
         if attribute_columns is None:
@@ -1707,13 +1658,10 @@ CONVERTER_CLASS_MAP = {
 def find_max_consecutive_nans(array: np.array) -> int:
     """
     Returns the maximum number of consecutive NaNs in an array.
-
     Args:
         array: 1-d numpy array of time series per example.
-
     Returns:
         max_cons_nan: The maximum number of consecutive NaNs in a times series array.
-
     """
     # The number of consecutive nans are listed based on the index difference between the non-null values.
     max_cons_nan = np.max(
@@ -1731,7 +1679,6 @@ def validation_check(
 ) -> np.array:
 
     """Checks if continuous features of examples are valid.
-
     Returns a 1-d numpy array of booleans with shape (#examples) indicating
     valid examples.
     Examples with continuous features fall into 3 categories: good, valid (fixable) and
@@ -1741,7 +1688,6 @@ def validation_check(
     consecutive NaNs.
     - "Invalid" are the rest, and are marked "False" in the returned array.  Later on,
     these are omitted from training. If there are too many, later, we error out.
-
     Args:
         array: 3-d numpy array of continuous features with
         shape (#examples,max_sequence_length, #continuous features).
@@ -1754,11 +1700,9 @@ def validation_check(
         consecutive_nans_ratio_cutoff: If the maximum number of consecutive nans in a
         continuous feature is greater than this ratio times the length of the example
         (number samples), then the example is invalid.
-
     Returns:
         valid_examples : 1-d numpy array of booleans indicating valid examples with
         shape (#examples).
-
     """
     # Check for the nans ratio per examples and feature.
     # nan_ratio_feature is a 2-d numpy array of size (#examples,#features)
@@ -1795,15 +1739,12 @@ def validation_check(
 
 def nan_linear_interpolation(arrays: np.ndarray) -> np.ndarray:
     """Replaces all NaNs via linear interpolation.
-
     Args:
         arrays: 3-d numpy array of continuous features, with shape
         (#examples, max_sequence_length, #continuous features)
-
     Returns:
         arrays: 3-d numpy array where NaNs are replaced via
         linear interpolation.
-
     """
     examples = arrays.shape[0]
     features = arrays.shape[2]
