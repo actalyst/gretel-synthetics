@@ -1156,7 +1156,6 @@ class DGAN:
         Returns:
             DGAN model instance
         """
-
         state = torch.load(file_name, **kwargs)
 
         config = DGANConfig(**state["config"])
@@ -1165,26 +1164,30 @@ class DGAN:
         dgan._build(run,state["attribute_outputs"], state["feature_outputs"])
 
         dgan.generator.load_state_dict(state["generate_state_dict"])
-        dgan.feature_discriminator.load_state_dict(
-            state["feature_discriminator_state_dict"]
-        )
+        if torch.cuda.is_available():
+            device = torch.device("cuda")
+            dgan.generator.to(device)
+
+        dgan.feature_discriminator.load_state_dict(state["feature_discriminator_state_dict"])
+        if torch.cuda.is_available():
+            device = torch.device("cuda")
+            dgan.feature_discriminator.to(device)
+
         if "attribute_discriminator_state_dict" in state:
             if dgan.attribute_discriminator is None:
                 raise RuntimeError(
                     "Error deserializing model: found unexpected attribute discriminator state in file"
                 )
-
-            dgan.attribute_discriminator.load_state_dict(
-                state["attribute_discriminator_state_dict"]
-            )
+            dgan.attribute_discriminator.load_state_dict(state["attribute_discriminator_state_dict"])
+            if torch.cuda.is_available():
+                device = torch.device("cuda")
+                dgan.attribute_discriminator.to(device)
 
         if "data_frame_converter" in state:
-            dgan.data_frame_converter = _DataFrameConverter.load_from_state_dict(
-                state["data_frame_converter"]
-            )
-        if torch.cuda.is_available():
-            device_ = torch.device("cuda")
-            dgan.to(device_)
+            dgan.data_frame_converter = _DataFrameConverter.load_from_state_dict(state["data_frame_converter"])
+            if torch.cuda.is_available():
+                device = torch.device("cuda")
+                dgan.data_frame_converter.to(device)
         return dgan
 
 
