@@ -473,16 +473,16 @@ class DGAN:
 
             internal_data_list = []
 
-            if self.config.cuda and torch.cuda.is_available():
-                self.device = "cuda"
-            else:
-                self.device = "cpu"
-            self.attribute_noise_func = lambda batch_size: torch.randn(
-            batch_size, self.config.attribute_noise_dim, device=self.device)
+            # if self.config.cuda and torch.cuda.is_available():
+            #     self.device = "cuda"
+            # else:
+            #     self.device = "cpu"
+            # self.attribute_noise_func = lambda batch_size: torch.randn(
+            #     batch_size, self.config.attribute_noise_dim, device=self.device,)
 
-            self.feature_noise_func = lambda batch_size: torch.randn(
-                batch_size,self.config.max_sequence_len // self.config.sample_len,
-                self.config.feature_noise_dim,device=self.device,)
+            # self.feature_noise_func = lambda batch_size: torch.randn(
+            #     batch_size,self.config.max_sequence_len // self.config.sample_len,
+            #     self.config.feature_noise_dim,device=self.device,)
 
             for _ in range(num_batches):
                 internal_data_list.append(
@@ -680,39 +680,39 @@ class DGAN:
 
             self.generator.apply(init_weights)
 
-
-        s3 = boto3.client('s3')
-        bucket_name = 'hrmsyntheticdata'
-        folder = 'hrm_synthetic/model_ckpts/'
-        file_name = 'checkpoint_gen_'+str(run)+'.t7'
-
-        try:
-            s3.head_object(Bucket=bucket_name, Key=folder + file_name)
-            check_file = True
-        except s3.exceptions.ClientError as e:
-            if e.response['Error']['Code'] == '404':
-                check_file = False
-            else:
-                raise e
-
-        if check_file :
+        if self._set_mode() :
             s3 = boto3.client('s3')
             bucket_name = 'hrmsyntheticdata'
             folder = 'hrm_synthetic/model_ckpts/'
-            filename = []
-            mod = ['gen_','feat_disc_','att_disc_']
-            for i in mod:
-                filename.append('checkpoint_'+str(i)+str(run)+'.t7')
-            # Copy the file from S3 to the local file system
-            for i in filename:
-                s3.download_file(bucket_name, folder+str(i), i) 
+            file_name = 'checkpoint_gen_'+str(run)+'.t7'
 
-            state_gen = torch.load(filename[0])
-            state_feat_disc = torch.load(filename[1])
-            state_att_disc = torch.load(filename[2])
-            self.generator.load_state_dict(state_gen['state_dict'])
-            self.feature_discriminator.load_state_dict(state_feat_disc['state_dict'])
-            self.attribute_discriminator.load_state_dict(state_att_disc['state_dict'])
+            try:
+                s3.head_object(Bucket=bucket_name, Key=folder + file_name)
+                check_file = True
+            except s3.exceptions.ClientError as e:
+                if e.response['Error']['Code'] == '404':
+                    check_file = False
+                else:
+                    raise e
+
+            if check_file :
+                s3 = boto3.client('s3')
+                bucket_name = 'hrmsyntheticdata'
+                folder = 'hrm_synthetic/model_ckpts/'
+                filename = []
+                mod = ['gen_','feat_disc_','att_disc_']
+                for i in mod:
+                    filename.append('checkpoint_'+str(i)+str(run)+'.t7')
+                # Copy the file from S3 to the local file system
+                for i in filename:
+                    s3.download_file(bucket_name, folder+str(i), i) 
+
+                state_gen = torch.load(filename[0])
+                state_feat_disc = torch.load(filename[1])
+                state_att_disc = torch.load(filename[2])
+                self.generator.load_state_dict(state_gen['state_dict'])
+                self.feature_discriminator.load_state_dict(state_feat_disc['state_dict'])
+                self.attribute_discriminator.load_state_dict(state_att_disc['state_dict'])
         
 
         self.is_built = True
@@ -960,7 +960,7 @@ class DGAN:
                     s3.upload_file(i, bucket_name, folder+str(i))
                     os.remove(i)
 
-            # print(epoch)
+            print(epoch)
 
             if progress_callback is not None:
                 progress_callback(
@@ -1136,13 +1136,9 @@ class DGAN:
             "feature_outputs": self.feature_outputs,
         }
         state["generate_state_dict"] = self.generator.state_dict()
-        state[
-            "feature_discriminator_state_dict"
-        ] = self.feature_discriminator.state_dict()
+        state["feature_discriminator_state_dict"] = self.feature_discriminator.state_dict()
         if self.attribute_discriminator is not None:
-            state[
-                "attribute_discriminator_state_dict"
-            ] = self.attribute_discriminator.state_dict()
+            state["attribute_discriminator_state_dict"] = self.attribute_discriminator.state_dict()
 
         if self.data_frame_converter is not None:
             state["data_frame_converter"] = self.data_frame_converter.state_dict()
