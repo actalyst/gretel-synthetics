@@ -949,7 +949,7 @@ class DGAN:
             for i in mod:
                 filename.append('checkpoint_'+str(i)+str(run)+'.t7')
 
-            if ((epoch%50)==0) & (epoch>0):
+            if ((epoch%250)==0) & (epoch>0):
                 state_gen = {'epoch': epoch,
                                 'state_dict': self.generator.state_dict(),
                                 'opt_generator': opt_generator.state_dict(),}
@@ -971,7 +971,7 @@ class DGAN:
                     s3.upload_file(i, bucket_name, folder+str(i))
                     os.remove(i)
 
-            print(epoch)
+            # print(epoch)
 
             if progress_callback is not None:
                 progress_callback(
