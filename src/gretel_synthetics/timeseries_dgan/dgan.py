@@ -18,30 +18,7 @@ closing prices for each time interval (daily). After being trained on historical
 data, the model can generate more hypothetical stocks and price behavior on the
 training time range.
 
-
-Sample usage:
-
-.. code-block::
-
-   import numpy as np
-   from gretel_synthetics.timeseries_dgan.dgan import DGAN
-   from gretel_synthetics.timeseries_dgan.config import DGANConfig
-
-   attributes = np.random.rand(10000, 3)
-   features = np.random.rand(10000, 20, 2)
-
-   config = DGANConfig(
-       max_sequence_len=20,
-       sample_len=5,
-       batch_size=1000,
-       epochs=10
-   )
-
-   model = DGAN(config)
-
-   model.train_numpy(attributes, features)
-
-   synthetic_attributes, synthetic_features = model.generate_numpy(1000)
+Modified by Aravind for Actalyst usage
 """
 
 
