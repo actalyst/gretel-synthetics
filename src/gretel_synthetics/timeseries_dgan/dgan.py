@@ -487,10 +487,8 @@ class DGAN:
             for _ in range(num_batches):
                 internal_data_list.append(
                     self._generate(
-                        self.attribute_noise_func(self.config.batch_size),
-                        self.feature_noise_func(self.config.batch_size),
-                    )
-                )
+                    self.attribute_noise_func(self.config.batch_size),
+                    self.feature_noise_func(self.config.batch_size),))
             # Convert from list of tuples to tuple of lists with zip(*) and
             # concatenate into single numpy arrays for attributes, additional
             # attributes (if present), and features.
@@ -1184,7 +1182,9 @@ class DGAN:
             dgan.data_frame_converter = _DataFrameConverter.load_from_state_dict(
                 state["data_frame_converter"]
             )
-
+        if torch.cuda.is_available():
+            device_ = torch.device("cuda")
+            dgan.to(device_)
         return dgan
 
 
