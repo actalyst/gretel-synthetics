@@ -469,11 +469,9 @@ class DGAN:
 
             for _ in range(num_batches):
                 internal_data_list.append(
-                    self._generate(
-                        self.attribute_noise_func(self.config.batch_size),
-                        self.feature_noise_func(self.config.batch_size),
-                    )
-                )
+                    self._generate(self.attribute_noise_func(self.config.batch_size),
+                                   self.feature_noise_func(self.config.batch_size),))
+                
             # Convert from list of tuples to tuple of lists with zip(*) and
             # concatenate into single numpy arrays for attributes, additional
             # attributes (if present), and features.
@@ -593,9 +591,8 @@ class DGAN:
 
         if not self.additional_attribute_outputs:
             self.additional_attribute_outputs = []
-        additional_attribute_dim = sum(
-            output.dim for output in self.additional_attribute_outputs
-        )
+        additional_attribute_dim = sum(output.dim for output in self.additional_attribute_outputs)
+
         feature_dim = sum(output.dim for output in feature_outputs)
         self.feature_discriminator = Discriminator(
             attribute_dim
@@ -623,10 +620,8 @@ class DGAN:
         )
 
         self.feature_noise_func = lambda batch_size: torch.randn(
-            batch_size,
-            self.config.max_sequence_len // self.config.sample_len,
-            self.config.feature_noise_dim,
-            device=self.device,
+            batch_size,self.config.max_sequence_len // self.config.sample_len,
+            self.config.feature_noise_dim,device=self.device
         )
 
         if self.config.forget_bias:
@@ -692,7 +687,16 @@ class DGAN:
                 self.generator.load_state_dict(state_gen['state_dict'])
                 self.feature_discriminator.load_state_dict(state_feat_disc['state_dict'])
                 self.attribute_discriminator.load_state_dict(state_att_disc['state_dict'])
-        
+
+                if self.config.cuda and torch.cuda.is_available():
+                    self.device = "cuda"
+                else:
+                    self.device = "cpu"
+
+                self.generator.to(self.device, non_blocking=True)
+                self.feature_discriminator.to(self.device, non_blocking=True)
+                if self.config.use_attribute_discriminator:
+                    self.attribute_discriminator.to(self.device, non_blocking=True)
 
         self.is_built = True
 
