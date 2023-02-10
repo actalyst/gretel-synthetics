@@ -456,17 +456,6 @@ class DGAN:
 
             internal_data_list = []
 
-            # if self.config.cuda and torch.cuda.is_available():
-            #     self.device = "cuda"
-            # else:
-            #     self.device = "cpu"
-            # self.attribute_noise_func = lambda batch_size: torch.randn(
-            #     batch_size, self.config.attribute_noise_dim, device=self.device,)
-
-            # self.feature_noise_func = lambda batch_size: torch.randn(
-            #     batch_size,self.config.max_sequence_len // self.config.sample_len,
-            #     self.config.feature_noise_dim,device=self.device,)
-
             for _ in range(num_batches):
                 internal_data_list.append(
                     self._generate(self.attribute_noise_func(self.config.batch_size),
@@ -1129,8 +1118,9 @@ class DGAN:
 
         config = DGANConfig(**state["config"])
         dgan = DGAN(config)
-
+        print("loaded config")
         dgan._build(run,state["attribute_outputs"], state["feature_outputs"])
+        print("Built the model")
 
         dgan.generator.load_state_dict(state["generate_state_dict"])
         dgan.feature_discriminator.load_state_dict(
