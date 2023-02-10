@@ -455,12 +455,13 @@ class DGAN:
                 num_batches += 1
 
             internal_data_list = []
-
             for _ in range(num_batches):
                 internal_data_list.append(
-                    self._generate(self.attribute_noise_func(self.config.batch_size),
-                                   self.feature_noise_func(self.config.batch_size),))
-                
+                    self._generate(
+                        self.attribute_noise_func(self.config.batch_size),
+                        self.feature_noise_func(self.config.batch_size),
+                    )
+                )
             # Convert from list of tuples to tuple of lists with zip(*) and
             # concatenate into single numpy arrays for attributes, additional
             # attributes (if present), and features.
@@ -580,8 +581,9 @@ class DGAN:
 
         if not self.additional_attribute_outputs:
             self.additional_attribute_outputs = []
-        additional_attribute_dim = sum(output.dim for output in self.additional_attribute_outputs)
-
+        additional_attribute_dim = sum(
+            output.dim for output in self.additional_attribute_outputs
+        )
         feature_dim = sum(output.dim for output in feature_outputs)
         self.feature_discriminator = Discriminator(
             attribute_dim
@@ -609,8 +611,10 @@ class DGAN:
         )
 
         self.feature_noise_func = lambda batch_size: torch.randn(
-            batch_size,self.config.max_sequence_len // self.config.sample_len,
-            self.config.feature_noise_dim,device=self.device
+            batch_size,
+            self.config.max_sequence_len // self.config.sample_len,
+            self.config.feature_noise_dim,
+            device=self.device,
         )
 
         if self.config.forget_bias:
@@ -643,49 +647,40 @@ class DGAN:
 
             self.generator.apply(init_weights)
 
-        if self._set_mode() :
+
+        s3 = boto3.client('s3')
+        bucket_name = 'hrmsyntheticdata'
+        folder = 'hrm_synthetic/model_ckpts/'
+        file_name = 'checkpoint_gen_'+str(run)+'.t7'
+
+        try:
+            s3.head_object(Bucket=bucket_name, Key=folder + file_name)
+            check_file = True
+        except s3.exceptions.ClientError as e:
+            if e.response['Error']['Code'] == '404':
+                check_file = False
+            else:
+                raise e
+
+        if check_file :
             s3 = boto3.client('s3')
             bucket_name = 'hrmsyntheticdata'
             folder = 'hrm_synthetic/model_ckpts/'
-            file_name = 'checkpoint_gen_'+str(run)+'.t7'
+            filename = []
+            mod = ['gen_','feat_disc_','att_disc_']
+            for i in mod:
+                filename.append('checkpoint_'+str(i)+str(run)+'.t7')
+            # Copy the file from S3 to the local file system
+            for i in filename:
+                s3.download_file(bucket_name, folder+str(i), i) 
 
-            try:
-                s3.head_object(Bucket=bucket_name, Key=folder + file_name)
-                check_file = True
-            except s3.exceptions.ClientError as e:
-                if e.response['Error']['Code'] == '404':
-                    check_file = False
-                else:
-                    raise e
-
-            if check_file :
-                s3 = boto3.client('s3')
-                bucket_name = 'hrmsyntheticdata'
-                folder = 'hrm_synthetic/model_ckpts/'
-                filename = []
-                mod = ['gen_','feat_disc_','att_disc_']
-                for i in mod:
-                    filename.append('checkpoint_'+str(i)+str(run)+'.t7')
-                # Copy the file from S3 to the local file system
-                for i in filename:
-                    s3.download_file(bucket_name, folder+str(i), i) 
-
-                state_gen = torch.load(filename[0])
-                state_feat_disc = torch.load(filename[1])
-                state_att_disc = torch.load(filename[2])
-                self.generator.load_state_dict(state_gen['state_dict'])
-                self.feature_discriminator.load_state_dict(state_feat_disc['state_dict'])
-                self.attribute_discriminator.load_state_dict(state_att_disc['state_dict'])
-
-                if self.config.cuda and torch.cuda.is_available():
-                    self.device = "cuda"
-                else:
-                    self.device = "cpu"
-
-                self.generator.to(self.device, non_blocking=True)
-                self.feature_discriminator.to(self.device, non_blocking=True)
-                if self.config.use_attribute_discriminator:
-                    self.attribute_discriminator.to(self.device, non_blocking=True)
+            state_gen = torch.load(filename[0])
+            state_feat_disc = torch.load(filename[1])
+            state_att_disc = torch.load(filename[2])
+            self.generator.load_state_dict(state_gen['state_dict'])
+            self.feature_discriminator.load_state_dict(state_feat_disc['state_dict'])
+            self.attribute_discriminator.load_state_dict(state_att_disc['state_dict'])
+        
 
         self.is_built = True
 
@@ -930,7 +925,7 @@ class DGAN:
                     s3.upload_file(i, bucket_name, folder+str(i))
                     os.remove(i)
 
-            print(epoch)
+            # print(epoch)
 
             if progress_callback is not None:
                 progress_callback(
@@ -1093,9 +1088,13 @@ class DGAN:
             "feature_outputs": self.feature_outputs,
         }
         state["generate_state_dict"] = self.generator.state_dict()
-        state["feature_discriminator_state_dict"] = self.feature_discriminator.state_dict()
+        state[
+            "feature_discriminator_state_dict"
+        ] = self.feature_discriminator.state_dict()
         if self.attribute_discriminator is not None:
-            state["attribute_discriminator_state_dict"] = self.attribute_discriminator.state_dict()
+            state[
+                "attribute_discriminator_state_dict"
+            ] = self.attribute_discriminator.state_dict()
 
         if self.data_frame_converter is not None:
             state["data_frame_converter"] = self.data_frame_converter.state_dict()
@@ -1118,9 +1117,8 @@ class DGAN:
 
         config = DGANConfig(**state["config"])
         dgan = DGAN(config)
-        print("loaded config")
+
         dgan._build(run,state["attribute_outputs"], state["feature_outputs"])
-        print("Built the model")
 
         dgan.generator.load_state_dict(state["generate_state_dict"])
         dgan.feature_discriminator.load_state_dict(
